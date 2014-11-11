@@ -45,3 +45,43 @@ head(ufo, 3)
 # 2     19951010     19951011         Milwaukee, WI               NA   2 min.
 # 3     19950101     19950103           Shelton, WA               NA       NA
 # Variables not shown: LongDescription (chr)
+
+# x %>% f(y) -> f(x, y)
+ufo <- ufo %>%
+  mutate(DateOccurred = as.Date(DateOccurred, format = "%Y%m%d"),
+         DateReported = as.Date(DateReported, format = "%Y%m%d"))
+# Error in strptime(x, format, tz = "GMT") : input string is too long
+# Why? Some entries in the Date* columns are too long to match the format string
+
+table(nchar(ufo$DateOccurred) != 8 |
+        nchar(ufo$DateReported) != 8)
+# FALSE  TRUE 
+# 61139   731
+
+# List dates that are not 8 characters long
+head(ufo[ # row
+  which(nchar(ufo$DateOccurred) != 8 | 
+          nchar(ufo$DateReported) != 8)
+  , 1]) # column
+
+# Construct a vector of TRUE and FALSE
+good.rows <- ifelse(
+  nchar(ufo$DateOccurred) != 8 | nchar(ufo$DateReported) != 8,
+  FALSE, TRUE # returns FALSE if != 8
+  )
+table(good.rows)
+# FALSE  TRUE
+# 731 61139
+
+ufo <- ufo[good.rows, ]
+rm(good.rows)
+
+ufo <- ufo %>%
+  mutate(DateOccurred = as.Date(DateOccurred, format = "%Y%m%d"),
+         DateReported = as.Date(DateReported, format = "%Y%m%d"))
+head(ufo, 3)
+# DateOccurred DateReported       Location ShortDescription Duration
+# 1   1995-10-09   1995-10-09  Iowa City, IA               NA       NA
+# 2   1995-10-10   1995-10-11  Milwaukee, WI               NA   2 min.
+# 3   1995-01-01   1995-01-03    Shelton, WA               NA       NA
+# Variables not shown: LongDescription (chr)
