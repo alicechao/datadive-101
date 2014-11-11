@@ -126,6 +126,11 @@ ufo <- ufo %>%
   filter(Country == "China" & Province != "South") %>%
   mutate(Mean = (DateReported - DateOccurred)) %>%
   filter(Mean >= 0)
+# DateOccurred DateReported ShortDescription   Mean
+# 1   1998-04-10   1998-04-13           circle 3 days
+# 2   1999-12-04   1999-12-05         cylinder 1 days
+# 3   2002-06-26   2002-06-27             oval 1 days
+# Variables not shown: LongDescription (chr), Province (chr), Country (chr), Mean (lgl)
 
 # Display the number of sightings in each province, and the average number of
 # days the reporters took to report an incident
@@ -134,6 +139,10 @@ ufo %>%
   summarise(Sightings = n(), Avg.Reporting = mean(Mean)) %>%
   #arrange(desc(Avg.Reporting))
   arrange(desc(Sightings))
+# Province Sightings   Avg.Reporting
+# 1  Beijing         5 115.400000 days
+# 2 Shanghai         5 147.600000 days
+# 3 Shenzhen         3   1.333333 days
 
 # The same as above except that we group by the provinces and the short
 # description
@@ -141,19 +150,38 @@ ufo %>%
   group_by(Province, ShortDescription) %>%
   summarise(Avg.Reporting = mean(Mean), Sightings = n()) %>%
   arrange(desc(Avg.Reporting))
+# Province ShortDescription Avg.Reporting Sightings
+# 1  Beijing           circle      302 days         1
+# 2  Beijing        formation      275 days         1
+# 3  Beijing            flash        0 days         1
 
 # Look at China broadly, group by short descriptions
 ufo %>%
   group_by(ShortDescription) %>%
   summarise(Avg.Reporting = mean(Mean), Sightings = n()) %>%
   arrange(desc(Avg.Reporting))
+# ShortDescription Avg.Reporting Sightings
+# 1         changing   6209.0 days         1
+# 2           circle    549.5 days         4
+# 3        formation    388.0 days         2
 
 # Sort sightings by DateOccurred in descending order
 oldest <- ufo %>%
   arrange(DateOccurred)
 # Display the description of the second oldest sighting
 print(oldest$LongDescription[2])
+# [1] "the diameter looks 50m approximation.in the center,looks like black
+#   clouds,and  something like rainbow around it.i was ready to go home with
+#   others at that time.when i was getting up the bus,i heard somebody speak
+#   alound&quot;look!,look!&quot;.and i found they were looking up the sky.there
+#   is the thing i beleive it is an UFO. it is beautiful and mystery.beause my
+#   english is poor,i can not tell the thing very clear.but trust me,it is great
+#   really."
 
 summary(ufo$DateOccurred)
 #         Min.      1st Qu.       Median         Mean      3rd Qu.         Max. 
 # "1988-10-05" "2004-07-27" "2006-11-23" "2005-07-07" "2008-12-04" "2010-07-10"
+
+summary(ufo$DateReported)
+#         Min.      1st Qu.       Median         Mean      3rd Qu.         Max. 
+# "1998-04-13" "2005-09-07" "2007-03-15" "2006-09-16" "2009-02-26" "2010-07-10"
