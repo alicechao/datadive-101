@@ -114,8 +114,39 @@ location.matrix <- do.call(rbind, province)
 ufo <- ufo %>%
   mutate(Province = location.matrix[, 1], Country = location.matrix[, 2],
          stringsAsFactors = FALSE) %>%
-  select(-Location, -Duration, -LongDescription) %>%
+  select(-Location, -Duration) %>%#), -LongDescription) %>%
   # Exclude "South China, ME" as it is not in China
   filter(Country == "China" & Province != "South") %>%
   mutate(Mean = (DateReported - DateOccurred)) %>%
   filter(Mean >= 0)
+
+# Display the number of sightings in each province, and the average number of
+# days the reporters took to report an incident
+ufo %>%
+  group_by(Province) %>%
+  summarise(Sightings = n(), Avg.Reporting = mean(Mean)) %>%
+  #arrange(desc(Avg.Reporting))
+  arrange(desc(Sightings))
+
+# The same as above except that we group by the provinces and the short
+# description
+ufo %>%
+  group_by(Province, ShortDescription) %>%
+  summarise(Avg.Reporting = mean(Mean), Sightings = n()) %>%
+  arrange(desc(Avg.Reporting))
+
+# Look at China broadly, group by short descriptions
+ufo %>%
+  group_by(ShortDescription) %>%
+  summarise(Avg.Reporting = mean(Mean), Sightings = n()) %>%
+  arrange(desc(Avg.Reporting))
+
+# Sort sightings by DateOccurred in descending order
+oldest <- ufo %>%
+  arrange(DateOccurred)
+# Display the description of the second oldest sighting
+print(oldest$LongDescription[2])
+
+summary(ufo$DateOccurred)
+#         Min.      1st Qu.       Median         Mean      3rd Qu.         Max. 
+# "1988-10-05" "2004-07-27" "2006-11-23" "2005-07-07" "2008-12-04" "2010-07-10"
