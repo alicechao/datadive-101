@@ -116,4 +116,6 @@ ufo <- ufo %>%
          stringsAsFactors = FALSE) %>%
   select(-Location, -Duration, -LongDescription) %>%
   # Exclude "South China, ME" as it is not in China
-  filter(Country == "China" & Province != "South")
+  filter(Country == "China" & Province != "South") %>%
+  mutate(Mean = (DateReported - DateOccurred)) %>%
+  filter(Mean >= 0)
