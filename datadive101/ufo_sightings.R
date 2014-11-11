@@ -1,5 +1,12 @@
 ## ufo_sightings.R
+## Copyright (C) 2012 Drew Conway <drew.conway@nyu.edu>
+## Copyright (C) 2014 Eugene Teo <eugeneteo@gmail.com>
+##
 ## https://github.com/johnmyleswhite/ML_for_Hackers
+## http://www.meetup.com/DataKind-SG/events/214159532/
+##
+## All source code is copyright (c) 2012-2014, under the Simplified BSD License.
+## For more information on FreeBSD see: http://www.opensource.org/licenses/bsd-license.php
 ##
 
 setwd("~/datadives/datadive101/")
