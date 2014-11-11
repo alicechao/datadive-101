@@ -98,6 +98,8 @@ get.location <- function(loc) {
   # Remove leading whitespace
   loc <- gsub("^ ", "", loc)
   
+  # strsplit() will throw an error if the split character is not matched, so we
+  # need to catch the error and return a vector of NA
   split.location <- tryCatch(
     strsplit(loc, ",")[[1]], error = function(e) return (c(NA, NA))
     ) # [1] "Nanjing (China)"
@@ -117,8 +119,12 @@ get.location <- function(loc) {
 }
 
 province <- lapply(ufo$Location, get.location)
+# Convert list into a two-column matrix with the province data as the leading
+# column. Row-bind all the vectors in province to create a matrix of province-
+# country
 location.matrix <- do.call(rbind, province)
 ufo <- ufo %>%
+  # Create two new columns for the province and country
   mutate(Province = location.matrix[, 1], Country = location.matrix[, 2],
          stringsAsFactors = FALSE) %>%
   select(-Location, -Duration) %>%#), -LongDescription) %>%
