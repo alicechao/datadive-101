@@ -85,3 +85,35 @@ head(ufo, 3)
 # 2   1995-10-10   1995-10-11  Milwaukee, WI               NA   2 min.
 # 3   1995-01-01   1995-01-03    Shelton, WA               NA       NA
 # Variables not shown: LongDescription (chr)
+
+# We only want China incidents of UFO sightings
+get.location <- function(loc) {
+  # Remove leading whitespace
+  loc <- gsub("^ ", "", loc)
+  
+  split.location <- tryCatch(
+    strsplit(loc, ",")[[1]], error = function(e) return (c(NA, NA))
+    ) # [1] "Nanjing (China)"
+  
+  split.location <- tryCatch(
+    strsplit(split.location, " ")[[1]], error = function(e) return (c(NA, NA))
+    ) # [1] "Nanjing" "(China)"
+  
+  clean.location <- gsub("^\\(", "", split.location)
+  clean.location <- gsub(")$", "", clean.location)
+  
+  if (length(clean.location) == 2) {
+    return (clean.location)
+  } else {
+    return (c(NA, NA))
+  }
+}
+
+province <- lapply(ufo$Location, get.location)
+location.matrix <- do.call(rbind, province)
+ufo <- ufo %>%
+  mutate(Province = location.matrix[, 1], Country = location.matrix[, 2],
+         stringsAsFactors = FALSE) %>%
+  select(-Location, -Duration, -LongDescription) %>%
+  # Exclude "South China, ME" as it is not in China
+  filter(Country == "China" & Province != "South")
