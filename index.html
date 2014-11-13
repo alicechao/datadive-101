@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Practical Data Wrangling</title>
+  <meta charset="utf-8">
+  <meta name="description" content="Practical Data Wrangling">
+  <meta name="author" content="Eugene Teo">
+  <meta name="generator" content="slidify" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  <link rel="stylesheet" href="libraries/frameworks/io2012/css/default.css" media="all" >
+  <link rel="stylesheet" href="libraries/frameworks/io2012/css/phone.css" 
+    media="only screen and (max-device-width: 480px)" >
+  <link rel="stylesheet" href="libraries/frameworks/io2012/css/slidify.css" >
+  <link rel="stylesheet" href="libraries/highlighters/highlight.js/css/solarized_light.css" />
+  <base target="_blank"> <!-- This amazingness opens all links in a new tab. -->  <link rel=stylesheet href="./assets/css/ribbons.css"></link>
+
+  
+  <!-- Grab CDN jQuery, fall back to local if offline -->
+  <script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.7.min.js"></script>
+  <script>window.jQuery || document.write('<script src="libraries/widgets/quiz/js/jquery.js"><\/script>')</script> 
+  <script data-main="libraries/frameworks/io2012/js/slides" 
+    src="libraries/frameworks/io2012/js/require-1.0.8.min.js">
+  </script>
+  
+  
+
+</head>
+<body style="opacity: 0">
+  <slides class="layout-widescreen">
+    
+    <!-- LOGO SLIDE -->
+        <slide class="title-slide segue nobackground">
+  <hgroup class="auto-fadein">
+    <h1>Practical Data Wrangling</h1>
+    <h2>DataDive 101 // 2014-11-15</h2>
+    <p>Eugene Teo<br/></p>
+  </hgroup>
+  <article></article>  
+</slide>
+    
+
+    <!-- SLIDES -->
+    <slide class="" id="slide-1" style="background:;">
+  <article data-timings="">
+    <p><q>Residents in Jurong West saw a strange object in the sky on Saturday night, describing it an unidentified flying object that hovered for as long as 15 minutes over some blocks of flats.</q></p>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-2" style="background:;">
+  <hgroup>
+    <h2>Data wrangling in 20 minutes!</h2>
+  </hgroup>
+  <article data-timings="">
+    <p>We will walk through an interesting example from the book <a href="http://shop.oreilly.com/product/0636920018483.do">Machine Learning for Hackers</a>. We will look at the documented reports of UFO sightings in China.</p>
+
+<p>You will need to clone my <a href="https://github.com/eugeneteo/datadive-101">datadive-101</a> git repository so that you can follow along.</p>
+
+<pre><code class="bash">$ git clone https://github.com/eugeneteo/datadive-101.git
+Cloning into &#39;datadive-101&#39;...
+remote: Counting objects: 58, done.
+remote: Compressing objects: 100% (46/46), done.
+remote: Total 58 (delta 13), reused 44 (delta 2)
+Unpacking objects: 100% (58/58), done.
+Checking connectivity... done.
+</code></pre>
+
+<pre><code class="bash">$ shasum datadive-101/ufo_awesome.tsv.tar.bz2 
+b1f58dfc72b3ba22286518efd0f0e0aac8f5a755  datadive-101/ufo_awesome.tsv.tar.bz2
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-3" style="background:;">
+  <hgroup>
+    <h2>Install the necessary R packages</h2>
+  </hgroup>
+  <article data-timings="">
+    <p>We will use <code>R.utils</code> to unarchive the dataset, and use <code>dplyr</code> to manipulate data frame-like objects.</p>
+
+<pre><code class="r">pkg &lt;- c(&quot;dplyr&quot;, &quot;R.utils&quot;)
+new.pkg &lt;- pkg[! (pkg %in% installed.packages())]
+if (length(new.pkg)) {
+  install.packages(new.pkg)
+}
+
+library(R.utils)
+library(dplyr)
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-4" style="background:;">
+  <hgroup>
+    <h2>Unarchive the dataset</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r">tardataset &lt;- &quot;./ufo_awesome.tsv.tar&quot;
+bzdataset &lt;- gsub(&quot;$&quot;, &quot;.bz2&quot;, tardataset)
+dataset &lt;- gsub(&quot;.tar$&quot;, &quot;&quot;, tardataset)
+if (! file.exists(dataset)) {
+  if (! file.exists(bzdataset)) {
+     # ufo_awesome.tsv&#39;s shasum: 39cfc99c9814d8806526a1adeaf3c582e47b0f27
+     file.url &lt;- &quot;https://raw.githubusercontent.com/eugeneteo/datadive-101/master/ufo_awesome.tsv.tar.bz2&quot;
+     download.file(file.url, destfile = bzdataset, method = &quot;curl&quot;)
+  }
+  bunzip2(bzdataset)
+  untar(tardataset)
+  file.remove(tardataset)
+}
+</code></pre>
+
+<pre><code>## [1] TRUE
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-5" style="background:;">
+  <hgroup>
+    <h2>Learn more about the dataset</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="bash">$ file ufo_awesome.tsv
+ufo_awesome.tsv: ASCII English text, with very long lines
+</code></pre>
+
+<pre><code class="bash">$ wc -l ufo_awesome.tsv
+61393 ufo_awesome.tsv
+</code></pre>
+
+<pre><code class="bash">$ head -1 ufo_awesome.tsv | recode html..ascii
+19951009  19951009   Iowa City, IA          Man repts. witnessing &quot;flash, followed
+  by a classic UFO, w/ a tailfin at back.&quot; Red color on top half of tailfin.
+  Became triangular.
+</code></pre>
+
+<pre><code class="bash">$ head -1 ufo_awesome.tsv | od -c | grep &#39;\\t&#39;
+0000000    1   9   9   5   1   0   0   9  \t   1   9   9   5   1   0   0
+0000020    9  \t       I   o   w   a       C   i   t   y   ,       I   A
+0000040   \t  \t  \t   M   a   n       r   e   p   t   s   .       w   i
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-6" style="background:;">
+  <hgroup>
+    <h2>Read the .tsv file</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r">ufo &lt;- tbl_df(read.delim(dataset, sep = &quot;\t&quot;, header = FALSE,
+                         stringsAsFactors = FALSE, na.strings = &quot;&quot;))
+names(ufo) &lt;- c(&quot;DateOccurred&quot;, &quot;DateReported&quot;, &quot;Location&quot;, &quot;ShortDescription&quot;,
+                &quot;Duration&quot;, &quot;LongDescription&quot;)
+head(ufo)
+</code></pre>
+
+<pre><code>## Source: local data frame [6 x 6]
+## 
+##   DateOccurred DateReported              Location ShortDescription
+## 1     19951009     19951009         Iowa City, IA               NA
+## 2     19951010     19951011         Milwaukee, WI               NA
+## 3     19950101     19950103           Shelton, WA               NA
+## 4     19950510     19950510          Columbia, MO               NA
+## 5     19950611     19950614           Seattle, WA               NA
+## 6     19951025     19951024  Brunswick County, ND               NA
+## Variables not shown: Duration (chr), LongDescription (chr)
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-7" style="background:;">
+  <hgroup>
+    <h2>Format the dates</h2>
+  </hgroup>
+  <article data-timings="">
+    <p>Convert the dates from <code>%Y%m%d</code> to <code>%Y-%m-%d</code> format.</p>
+
+<pre><code class="r">ufo &lt;- mutate(mutate(ufo, DateOccurred = as.Date(DateOccurred, format = &quot;%Y%m%d&quot;)),
+              DateReported = as.Date(DateReported, format = &quot;%Y%m%d&quot;))
+</code></pre>
+
+<p>A better way of writing this is to use the <code>%&gt;%</code> operator. It turns <code>x %&gt;% f(y)</code> into <code>f(x, y)</code>.</p>
+
+<pre><code class="r">ufo &lt;- ufo %&gt;%
+  mutate(DateOccurred = as.Date(DateOccurred, format = &quot;%Y%m%d&quot;),
+         DateReported = as.Date(DateReported, format = &quot;%Y%m%d&quot;))
+</code></pre>
+
+<pre><code>## Error in strptime(x, format, tz = &quot;GMT&quot;): input string is too long
+</code></pre>
+
+<p>Why is there an error?</p>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-8" style="background:;">
+  <hgroup>
+    <h2>Not all dates are eight characters long</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r">head(ufo[ # row
+  which(nchar(ufo$DateOccurred) != 8 | 
+          nchar(ufo$DateReported) != 8)
+  , 1]) # column
+</code></pre>
+
+<pre><code>## Source: local data frame [6 x 1]
+## 
+##                                                                  DateOccurred
+## 1                                                        ler@gnv.ifas.ufl.edu
+## 2                                                                        0000
+## 3 Callers report sighting a number of soft white  balls of lights headingin a
+## 4                                                                        0000
+## 5                                                                        0000
+## 6                                                                        0000
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-9" style="background:;">
+  <hgroup>
+    <h2>Let&#39;s fix the dates</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r">good.rows &lt;- ifelse(
+  nchar(ufo$DateOccurred) != 8 | nchar(ufo$DateReported) != 8,
+  FALSE, TRUE # returns FALSE if != 8
+  )
+head(good.rows)
+</code></pre>
+
+<pre><code>## [1] TRUE TRUE TRUE TRUE TRUE TRUE
+</code></pre>
+
+<pre><code class="r">table(good.rows)
+</code></pre>
+
+<pre><code>## good.rows
+## FALSE  TRUE 
+##   731 61139
+</code></pre>
+
+<pre><code class="r">ufo &lt;- ufo[good.rows, ]
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-10" style="background:;">
+  <hgroup>
+    <h2>Format the dates, take two</h2>
+  </hgroup>
+  <article data-timings="">
+    <p>Replace the two existing variables (columns) with the correct date formatting.</p>
+
+<pre><code class="r">ufo &lt;- ufo %&gt;%
+  mutate(DateOccurred = as.Date(DateOccurred, format = &quot;%Y%m%d&quot;),
+         DateReported = as.Date(DateReported, format = &quot;%Y%m%d&quot;))
+head(ufo)
+</code></pre>
+
+<pre><code>## Source: local data frame [6 x 6]
+## 
+##   DateOccurred DateReported              Location ShortDescription
+## 1   1995-10-09   1995-10-09         Iowa City, IA               NA
+## 2   1995-10-10   1995-10-11         Milwaukee, WI               NA
+## 3   1995-01-01   1995-01-03           Shelton, WA               NA
+## 4   1995-05-10   1995-05-10          Columbia, MO               NA
+## 5   1995-06-11   1995-06-14           Seattle, WA               NA
+## 6   1995-10-25   1995-10-24  Brunswick County, ND               NA
+## Variables not shown: Duration (chr), LongDescription (chr)
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-11" style="background:;">
+  <hgroup>
+    <h2>Show us only the UFO sightings in China</h2>
+  </hgroup>
+  <article data-timings="">
+    <p><code>gsub(pattern, replacement, x)</code></p>
+
+<p><code>&quot;^ &quot;</code> matches the leading whitespace.</p>
+
+<p>strsplit() will throw an error if the split character is not matched.</p>
+
+<pre><code class="r">get.location &lt;- function(loc) {
+  loc &lt;- gsub(&quot;^ &quot;, &quot;&quot;, loc)
+
+  split.location &lt;- tryCatch(
+    strsplit(loc, &quot;,&quot;)[[1]], error = function(e) return (c(NA, NA))
+    ) # [1] &quot;Nanjing (China)&quot;
+
+  split.location &lt;- tryCatch(
+    strsplit(split.location, &quot; &quot;)[[1]], error = function(e) return (c(NA, NA))
+    ) # [1] &quot;Nanjing&quot; &quot;(China)&quot;
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-12" style="background:;">
+  <hgroup>
+    <h2>Show us only the UFO sightings in China</h2>
+  </hgroup>
+  <article data-timings="">
+    <p><code>&quot;^\\(&quot;</code> matches the first character <code>&#39;(&#39;</code>.</p>
+
+<p><code>&quot;)$&quot;</code> matches the last character <code>&#39;)&#39;</code>.</p>
+
+<pre><code class="r">  # [1] &quot;Nanjing&quot; &quot;(China)&quot;
+  clean.location &lt;- gsub(&quot;^\\(&quot;, &quot;&quot;, split.location)
+  clean.location &lt;- gsub(&quot;)$&quot;, &quot;&quot;, clean.location)
+  # [1] &quot;Nanjing&quot; &quot;China&quot;
+
+  if (length(clean.location) == 2) {
+    return (clean.location)
+  } else {
+    return (c(NA, NA))
+  }
+}
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-13" style="background:;">
+  <hgroup>
+    <h2>Apply get.location() on all locations</h2>
+  </hgroup>
+  <article data-timings="">
+    <p><code>lapply()</code> will apply the <code>get.location()</code> over the <code>ufo$Location</code> character vector.</p>
+
+<pre><code class="r">province &lt;- lapply(ufo$Location, get.location)
+head(province, 3)
+</code></pre>
+
+<pre><code>## [[1]]
+## [1] &quot;Iowa&quot; &quot;City&quot;
+## 
+## [[2]]
+## [1] NA NA
+## 
+## [[3]]
+## [1] NA NA
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-14" style="background:;">
+  <hgroup>
+    <h2>Convert the list into a matrix</h2>
+  </hgroup>
+  <article data-timings="">
+    <p>Call <code>rbind()</code> on <code>province</code> list to convert it into a two-column matrix with the province data as the leading column.</p>
+
+<pre><code class="r">location.matrix &lt;- do.call(rbind, province)
+head(location.matrix, 8)
+</code></pre>
+
+<pre><code>##      [,1]        [,2]    
+## [1,] &quot;Iowa&quot;      &quot;City&quot;  
+## [2,] NA          NA      
+## [3,] NA          NA      
+## [4,] NA          NA      
+## [5,] NA          NA      
+## [6,] &quot;Brunswick&quot; &quot;County&quot;
+## [7,] NA          NA      
+## [8,] &quot;Las&quot;       &quot;Vegas&quot;
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-15" style="background:;">
+  <hgroup>
+    <h2>Clean up and filter the dataset</h2>
+  </hgroup>
+  <article data-timings="">
+    <p>Create two new variables for the province and country. To make the dataset more readable, remove the <code>Location</code> and <code>Duration</code> variables. Finally, filter the dataset to only display the documented reports from China. At the same time, make sure that the reports were not reported before they were occurred.</p>
+
+<pre><code class="r">new.ufo &lt;- ufo %&gt;%
+  # Create two new columns for the province and country
+  mutate(Province = location.matrix[, 1], Country = location.matrix[, 2],
+         stringsAsFactors = FALSE) %&gt;%
+  select(-Location, -Duration) %&gt;%
+  # Exclude &quot;South China, ME&quot; as it is not in China
+  filter(Country == &quot;China&quot; &amp; Province != &quot;South&quot;) %&gt;%
+  mutate(Mean = (DateReported - DateOccurred)) %&gt;%
+  filter(Mean &gt;= 0)
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-16" style="background:;">
+  <hgroup>
+    <h2>After cleaning up</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r">head(new.ufo, 10)
+</code></pre>
+
+<pre><code>## Source: local data frame [10 x 8]
+## 
+##    DateOccurred DateReported ShortDescription      Mean
+## 1    1998-04-10   1998-04-13           circle    3 days
+## 2    1999-12-04   1999-12-05         cylinder    1 days
+## 3    2002-06-26   2002-06-27             oval    1 days
+## 4    1998-10-24   2003-12-30           circle 1893 days
+## 5    2005-06-03   2005-06-15         teardrop   12 days
+## 6    2004-04-15   2005-08-29        formation  501 days
+## 7    2005-10-04   2005-10-05            other    1 days
+## 8    1988-10-05   2005-10-05         changing 6209 days
+## 9    2006-01-31   2006-02-05            light    5 days
+## 10   2006-07-07   2006-07-07             disk    0 days
+## Variables not shown: LongDescription (chr), Province (chr), Country (chr),
+##   Mean (lgl)
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-17" style="background:;">
+  <hgroup>
+    <h2>Sightings in each province</h2>
+  </hgroup>
+  <article data-timings="">
+    <p>Display the number of sightings in each province, and the average number of days the reporters took to report an incident.</p>
+
+<pre><code class="r">new.ufo %&gt;%
+  group_by(Province) %&gt;%
+  summarise(Sightings = n(), Avg.Reporting = mean(Mean)) %&gt;%
+  arrange(desc(Sightings)) %&gt;%
+  head(5)
+</code></pre>
+
+<pre><code>## Source: local data frame [5 x 3]
+## 
+##    Province Sightings    Avg.Reporting
+## 1   Beijing         5  115.400000 days
+## 2  Shanghai         5  147.600000 days
+## 3  Shenzhen         3    1.333333 days
+## 4 Changchun         1    5.000000 days
+## 5    Daqing         1 6209.000000 days
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-18" style="background:;">
+  <hgroup>
+    <h2>Sightings by provinces and short descriptions</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r">new.ufo %&gt;%
+  group_by(Province, ShortDescription) %&gt;%
+  summarise(Avg.Reporting = mean(Mean), Sightings = n()) %&gt;%
+  arrange(desc(Avg.Reporting)) %&gt;%
+  head(7)
+</code></pre>
+
+<pre><code>## Source: local data frame [7 x 4]
+## Groups: Province
+## 
+##    Province ShortDescription Avg.Reporting Sightings
+## 1   Beijing           circle      302 days         1
+## 2   Beijing        formation      275 days         1
+## 3   Beijing            flash        0 days         1
+## 4   Beijing             oval        0 days         1
+## 5   Beijing         teardrop        0 days         1
+## 6 Changchun            light        5 days         1
+## 7    Daqing         changing     6209 days         1
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-19" style="background:;">
+  <hgroup>
+    <h2>Look at China broadly</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r">new.ufo %&gt;%
+  group_by(ShortDescription) %&gt;%
+  summarise(Avg.Reporting = mean(Mean), Sightings = n()) %&gt;%
+  arrange(desc(Avg.Reporting)) %&gt;%
+  head(8)
+</code></pre>
+
+<pre><code>## Source: local data frame [8 x 3]
+## 
+##   ShortDescription Avg.Reporting Sightings
+## 1         changing   6209.0 days         1
+## 2           circle    549.5 days         4
+## 3        formation    388.0 days         2
+## 4            cigar    223.0 days         1
+## 5          unknown     89.0 days         2
+## 6         teardrop      6.0 days         2
+## 7            light      5.0 days         1
+## 8         cylinder      1.0 days         1
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-20" style="background:;">
+  <hgroup>
+    <h2>The second oldest sighting!</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r">oldest &lt;- new.ufo %&gt;%
+  arrange(DateOccurred)
+print(oldest$LongDescription[2])
+</code></pre>
+
+<pre><code>## [1] &quot;the diameter looks 50m approximation.in the center,looks like black clouds,and  something like rainbow around it.i was ready to go home with others at that time.when i was getting up the bus,i heard somebody speak alound&amp;quot;look!,look!&amp;quot;.and i found they were looking up the sky.there is the thing i beleive it is an UFO. it is beautiful and mystery.beause my english is poor,i can not tell the thing very clear.but trust me,it is great really.&quot;
+</code></pre>
+
+<pre><code class="bash">$ cat /tmp/delme.txt | recode html..ascii
+# [1] &quot;the diameter looks 50m approximation.in the center,looks like black
+#   clouds,and  something like rainbow around it.i was ready to go home with
+#   others at that time.when i was getting up the bus,i heard somebody speak
+#   alound&quot;look!,look!&quot;.and i found they were looking up the sky.there
+#   is the thing i beleive it is an UFO. it is beautiful and mystery.beause my
+#   english is poor,i can not tell the thing very clear.but trust me,it is great
+#   really.&quot;
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-21" style="background:;">
+  <hgroup>
+    <h2>Other possible cleanups</h2>
+  </hgroup>
+  <article data-timings="">
+    <pre><code class="r">head(ufo$Duration, 20)
+</code></pre>
+
+<pre><code>##  [1] NA        &quot;2 min.&quot;  NA        &quot;2 min.&quot;  NA        &quot;30 min.&quot; &quot;2 min.&quot; 
+##  [8] NA        NA        &quot;6 min.&quot;  NA        &quot;1 min.&quot;  NA        &quot;5 sec.&quot; 
+## [15] NA        NA        NA        &quot;5 min.&quot;  &quot;25 min.&quot; NA
+</code></pre>
+
+<pre><code class="r">tail(ufo$Duration, 20)
+</code></pre>
+
+<pre><code>##  [1] &quot;over 20 minutes&quot;   &quot;3 seconds&quot;         &quot;One minute&quot;       
+##  [4] &quot;3 min&quot;             &quot;23 minutes&quot;        &quot;60 mins.&quot;         
+##  [7] &quot;3 mins.&quot;           &quot;2 seconds&quot;         &quot;15 minutes&quot;       
+## [10] &quot;about an hour&quot;     &quot;1 minute&quot;          &quot;2 minutes&quot;        
+## [13] &quot;15 seconds&quot;        &quot;30min&quot;             &quot;40 seconds&quot;       
+## [16] &quot;10 min&quot;            &quot;20 minutes&quot;        &quot;at lest 45 min&quot;   
+## [19] &quot;5 Min. maybe more&quot; &quot;15 seconds&quot;
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-22" style="background:;">
+  <hgroup>
+    <h2>References</h2>
+  </hgroup>
+  <article data-timings="">
+    <ol>
+<li>Machine Learning for Hackers <a href="http://shop.oreilly.com/product/0636920018483.do">http://shop.oreilly.com/product/0636920018483.do</a></li>
+<li>Example code from the book <a href="https://github.com/johnmyleswhite/ML_for_Hackers">https://github.com/johnmyleswhite/ML_for_Hackers</a></li>
+<li>Introducing dplyr <a href="http://blog.rstudio.org/2014/01/17/introducing-dplyr/">http://blog.rstudio.org/2014/01/17/introducing-dplyr/</a></li>
+<li>CRAN Task View: Web Technologies and Services <a href="https://github.com/ropensci/mappingtools">https://github.com/ropensci/mappingtools</a></li>
+</ol>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-23" style="background:;">
+  <hgroup>
+    <h2>Q&amp;A</h2>
+  </hgroup>
+  <article data-timings="">
+    <p>Any questions?</p>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+    <slide class="backdrop"></slide>
+  </slides>
+  <div class="pagination pagination-small" id='io2012-ptoc' style="display:none;">
+    <ul>
+      <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=1 title=''>
+         1
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=2 title='Data wrangling in 20 minutes!'>
+         2
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=3 title='Install the necessary R packages'>
+         3
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=4 title='Unarchive the dataset'>
+         4
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=5 title='Learn more about the dataset'>
+         5
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=6 title='Read the .tsv file'>
+         6
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=7 title='Format the dates'>
+         7
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=8 title='Not all dates are eight characters long'>
+         8
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=9 title='Let&#39;s fix the dates'>
+         9
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=10 title='Format the dates, take two'>
+         10
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=11 title='Show us only the UFO sightings in China'>
+         11
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=12 title='Show us only the UFO sightings in China'>
+         12
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=13 title='Apply get.location() on all locations'>
+         13
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=14 title='Convert the list into a matrix'>
+         14
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=15 title='Clean up and filter the dataset'>
+         15
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=16 title='After cleaning up'>
+         16
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=17 title='Sightings in each province'>
+         17
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=18 title='Sightings by provinces and short descriptions'>
+         18
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=19 title='Look at China broadly'>
+         19
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=20 title='The second oldest sighting!'>
+         20
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=21 title='Other possible cleanups'>
+         21
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=22 title='References'>
+         22
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=23 title='Q&amp;A'>
+         23
+      </a>
+    </li>
+  </ul>
+  </div>  <!--[if IE]>
+    <script 
+      src="http://ajax.googleapis.com/ajax/libs/chrome-frame/1/CFInstall.min.js">  
+    </script>
+    <script>CFInstall.check({mode: 'overlay'});</script>
+  <![endif]-->
+</body>
+  <!-- Load Javascripts for Widgets -->
+  
+  <!-- LOAD HIGHLIGHTER JS FILES -->
+  <script src="libraries/highlighters/highlight.js/highlight.pack.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  <!-- DONE LOADING HIGHLIGHTER JS FILES -->
+   
+  </html>
