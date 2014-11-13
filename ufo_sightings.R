@@ -9,21 +9,29 @@
 ## For more information on FreeBSD see: http://www.opensource.org/licenses/bsd-license.php
 ##
 
-setwd("~/datadives/datadive101/")
+setwd("~/datadive-101/")
 
-pkg <- c("dplyr")
+pkg <- c("dplyr", "R.utils")
 new.pkg <- pkg[! (pkg %in% installed.packages())]
 if (length(new.pkg)) {
   install.packages(new.pkg)
 }
 
+library(R.utils)
 library(dplyr)
 
-dataset <- "./ufo_awesome.tsv"
+tardataset <- "./ufo_awesome.tsv.tar"
+bzdataset <- gsub("$", ".bz2", tardataset)
+dataset <- gsub(".tar$", "", tardataset)
 if (! file.exists(dataset)) {
-  # shasum: 39cfc99c9814d8806526a1adeaf3c582e47b0f27
-  file.url <- "https://raw.githubusercontent.com/johnmyleswhite/ML_for_Hackers/master/01-Introduction/data/ufo/ufo_awesome.tsv"
-  download.file(file.url, destfile = dataset, method = "curl")
+  if (! file.exists(bzdataset)) {
+     # ufo_awesome.tsv's shasum: 39cfc99c9814d8806526a1adeaf3c582e47b0f27
+     file.url <- "https://raw.githubusercontent.com/eugeneteo/datadive-101/master/ufo_awesome.tsv.tar.bz2"
+     download.file(file.url, destfile = bzdataset, method = "curl")
+  }
+  bunzip2(bzdataset)
+  untar(tardataset)
+  file.remove(tardataset)
 }
 
 # $ file ufo_awesome.tsv
