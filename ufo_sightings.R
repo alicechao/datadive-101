@@ -40,10 +40,10 @@ if (! file.exists(dataset)) {
 # $ wc -l ufo_awesome.tsv
 # 61393 ufo_awesome.tsv
 #
-# $ head -1 ufo_awesome.tsv
-# 19951009  19951009	 Iowa City, IA			Man repts. witnessing &quot;flash,
-#   followed by a classic UFO, w/ a tailfin at back.&quot; Red color on top half
-#   of tailfin. Became triangular.
+# $ head -1 ufo_awesome.tsv | recode html..ascii
+# 19951009  19951009       Iowa City, IA                  Man repts. witnessing "flash,
+#   followed by a classic UFO, w/ a tailfin at back." Red color on top half of tailfin.
+#   Became triangular.
 #
 # $ head -1 ufo_awesome.tsv | od -c | grep '\\t'
 # 0000000    1   9   9   5   1   0   0   9  \t   1   9   9   5   1   0   0
@@ -131,7 +131,7 @@ province <- lapply(ufo$Location, get.location)
 # column. Row-bind all the vectors in province to create a matrix of province-
 # country
 location.matrix <- do.call(rbind, province)
-ufo <- ufo %>%
+new.ufo <- ufo %>%
   # Create two new columns for the province and country
   mutate(Province = location.matrix[, 1], Country = location.matrix[, 2],
          stringsAsFactors = FALSE) %>%
@@ -148,7 +148,7 @@ ufo <- ufo %>%
 
 # Display the number of sightings in each province, and the average number of
 # days the reporters took to report an incident
-ufo %>%
+new.ufo %>%
   group_by(Province) %>%
   summarise(Sightings = n(), Avg.Reporting = mean(Mean)) %>%
   #arrange(desc(Avg.Reporting))
@@ -160,7 +160,7 @@ ufo %>%
 
 # The same as above except that we group by the provinces and the short
 # description
-ufo %>%
+new.ufo %>%
   group_by(Province, ShortDescription) %>%
   summarise(Avg.Reporting = mean(Mean), Sightings = n()) %>%
   arrange(desc(Avg.Reporting))
@@ -170,7 +170,7 @@ ufo %>%
 # 3  Beijing            flash        0 days         1
 
 # Look at China broadly, group by short descriptions
-ufo %>%
+new.ufo %>%
   group_by(ShortDescription) %>%
   summarise(Avg.Reporting = mean(Mean), Sightings = n()) %>%
   arrange(desc(Avg.Reporting))
@@ -180,7 +180,7 @@ ufo %>%
 # 3        formation    388.0 days         2
 
 # Sort sightings by DateOccurred in descending order
-oldest <- ufo %>%
+oldest <- new.ufo %>%
   arrange(DateOccurred)
 # Display the description of the second oldest sighting
 print(oldest$LongDescription[2])
@@ -192,10 +192,10 @@ print(oldest$LongDescription[2])
 #   english is poor,i can not tell the thing very clear.but trust me,it is great
 #   really."
 
-summary(ufo$DateOccurred)
+summary(new.ufo$DateOccurred)
 #         Min.      1st Qu.       Median         Mean      3rd Qu.         Max. 
 # "1988-10-05" "2004-07-27" "2006-11-23" "2005-07-07" "2008-12-04" "2010-07-10"
 
-summary(ufo$DateReported)
+summary(new.ufo$DateReported)
 #         Min.      1st Qu.       Median         Mean      3rd Qu.         Max. 
 # "1998-04-13" "2005-09-07" "2007-03-15" "2006-09-16" "2009-02-26" "2010-07-10"
